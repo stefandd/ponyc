@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <string.h>
 #include <dtrace.h>
+#include <stdio.h>
 
 #ifdef USE_VALGRIND
 #include <valgrind/helgrind.h>
@@ -411,7 +412,7 @@ bool ponyint_actor_run(pony_ctx_t* ctx, pony_actor_t* actor, bool polling)
     return true;
 
   // note that we're logically blocked
-  if(!has_flag(actor, FLAG_BLOCKED | FLAG_SYSTEM | FLAG_BLOCKED_SENT))
+  if(!has_flag(actor, FLAG_BLOCKED | FLAG_BLOCKED_SENT))
   {
     set_flag(actor, FLAG_BLOCKED);
 
@@ -425,11 +426,27 @@ bool ponyint_actor_run(pony_ctx_t* ctx, pony_actor_t* actor, bool polling)
       // in the future we will wait for the CD to reach out and ask
       // if we're blocked or not.
       // But, only if gc.rc > 0 because if gc.rc == 0 we are a zombie.
+
       set_flag(actor, FLAG_BLOCKED_SENT);
       set_flag(actor, FLAG_CD_CONTACTED);
       ponyint_cycle_block(actor, &actor->gc);
     }
+  }
 
+  if (!actor_noblock && (actor->gc.rc == 0) && has_flag(actor, FLAG_BLOCKED) && has_flag(actor, FLAG_CD_CONTACTED))
+  {
+       if(!has_flag(actor, FLAG_BLOCKED_SENT))
+      {
+        // We're blocked, send block message.
+        // This is concurrency safe because, only the cycle detector might
+        // have a reference to this actor (rc is 0) so another actor can not
+        // send it an application message that results this actor becoming
+        // unblocked (which would create a race condition).
+        //printf("2\n");
+        set_flag(actor, FLAG_BLOCKED_SENT);
+        set_flag(actor, FLAG_CD_CONTACTED);
+        ponyint_cycle_block(actor, &actor->gc);
+      }
   }
 
   // If we mark the queue as empty, then it is no longer safe to do any
@@ -472,24 +489,6 @@ bool ponyint_actor_run(pony_ctx_t* ctx, pony_actor_t* actor, bool polling)
       ponyint_actor_setpendingdestroy(actor);
       ponyint_actor_final(ctx, actor);
       ponyint_actor_destroy(actor);
-    } else {
-      // Tell cycle detector that this actor is a zombie and will not get
-      // any more messages/work and can be reaped.
-      // Mark the actor as FLAG_BLOCKED_SENT and send a BLOCKED message
-      // to speed up reaping otherwise waiting for the cycle detector
-      // to get around to asking if we're blocked could result in unnecessary
-      // memory growth.
-      if(!has_flag(actor, FLAG_BLOCKED_SENT))
-      {
-        // We're blocked, send block message.
-        // This is concurrency safe because, only the cycle detector might
-        // have a reference to this actor (rc is 0) so another actor can not
-        // send it an application message that results this actor becoming
-        // unblocked (which would create a race condition).
-        set_flag(actor, FLAG_BLOCKED_SENT);
-        set_flag(actor, FLAG_CD_CONTACTED);
-        ponyint_cycle_block(actor, &actor->gc);
-      }
     }
   }
 
