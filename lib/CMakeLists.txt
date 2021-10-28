@@ -114,6 +114,7 @@ else()
     message(FATAL_ERROR "Git not found!")
 endif()
 
+set(LLVM_TARGETS_TO_BUILD "X86;ARM;AArch64;WebAssembly")
 message("Building targets: ${LLVM_TARGETS_TO_BUILD}")
 
 set(LLVM_ENABLE_BINDINGS OFF)
