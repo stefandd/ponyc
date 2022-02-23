@@ -254,8 +254,8 @@ switch ($Command.ToLower())
 
         # stdlib-debug
         $numTestSuitesRun += 1;
-        Write-Output "$outDir\ponyc.exe -d --checktree --verify -b stdlib-debug -o $outDir $srcDir\packages\stdlib"
-        & $outDir\ponyc.exe -d --checktree --verify -b stdlib-debug -o $outDir $srcDir\packages\stdlib
+        Write-Output "$outDir\ponyc.exe -d --checktree -b stdlib-debug -o $outDir $srcDir\packages\stdlib"
+        & $outDir\ponyc.exe -d --checktree -b stdlib-debug -o $outDir $srcDir\packages\stdlib
         if ($LastExitCode -eq 0)
         {
             Write-Output "$outDir\stdlib-debug.exe"
@@ -270,8 +270,8 @@ switch ($Command.ToLower())
 
         # stdlib-release
         $numTestSuitesRun += 1;
-        Write-Output "$outDir\ponyc.exe --checktree --verify -b stdlib-release -o $outDir $srcDir\packages\stdlib"
-        & $outDir\ponyc.exe --checktree --verify -b stdlib-release -o $outDir $srcDir\packages\stdlib
+        Write-Output "$outDir\ponyc.exe --checktree -b stdlib-release -o $outDir $srcDir\packages\stdlib"
+        & $outDir\ponyc.exe --checktree -b stdlib-release -o $outDir $srcDir\packages\stdlib
         if ($LastExitCode -eq 0)
         {
             Write-Output "$outDir\stdlib-release.exe"
